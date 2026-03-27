@@ -32,11 +32,10 @@ function randomColor(): string {
 // ---------------------------------------------------------------------------
 function letterBounce(index: number) {
   return {
-    y: -(14 + sr(index, 5) * 8), // −14 to −22 px lift
-    scale: 1.15 + sr(index, 6) * 0.1, // 1.15 – 1.25 ×
+    x: -(14 + sr(index, 5) * 6), // −14 to −20 px sideways
     rotate: (sr(index, 7) - 0.5) * 12, // −6° to +6°
-    stiffness: 420 + sr(index, 8) * 200, // spring stiffness
-    damping: 12 + sr(index, 9) * 6, // spring damping
+    stiffness: 200 + sr(index, 8) * 100, // spring stiffness (lower for longer oscillation)
+    damping: 8 + sr(index, 9) * 4, // spring damping (lower for more bounces)
   }
 }
 
@@ -58,6 +57,10 @@ export function AnimatedText({ text, style, className }: AnimatedTextProps) {
   function handleHoverStart(i: number) {
     setHoveredIndex(i)
     setColorMap((prev) => ({ ...prev, [i]: randomColor() }))
+
+    setTimeout(() => {
+      setHoveredIndex(null)
+    }, 2000)
   }
 
   const words = useMemo(
@@ -69,30 +72,20 @@ export function AnimatedText({ text, style, className }: AnimatedTextProps) {
     [text]
   )
 
-  // const letters = useMemo(
-  //   () =>
-  //     text.split("").map((char, i) => ({
-  //       char,
-  //       i,
-  //       bounce: letterBounce(i),
-  //     })),
-  //   [text]
-  // )
-
   return (
     <span
       className={className}
       style={{ ...style, display: "inline", cursor: "default" }}
     >
-      {words.map((word, i) => {
+      {words.map((word, wordIndex) => {
         const letters = word.split("").map((char, i) => ({
           char,
-          i,
+          i: wordIndex * 1000 + i,
           bounce: letterBounce(i),
         }))
 
         return (
-          <span key={i} className="whitespace-nowrap">
+          <span key={wordIndex} className="whitespace-nowrap">
             {letters.map(({ char, i, bounce }) => {
               const isSpace = char === " "
               const active = !isSpace && hoveredIndex === i
@@ -114,27 +107,27 @@ export function AnimatedText({ text, style, className }: AnimatedTextProps) {
               return (
                 <motion.span
                   key={i}
-                  onHoverStart={() => handleHoverStart(i)}
-                  onHoverEnd={() => setHoveredIndex(null)}
+                  onMouseEnter={() => handleHoverStart(i)}
+                  onMouseLeave={() => setHoveredIndex(null)}
                   animate={
                     active
                       ? {
-                          y: bounce.y,
-                          scale: bounce.scale,
+                          x: bounce.x,
                           rotate: bounce.rotate,
                           color,
                         }
-                      : { y: 0, scale: 1, rotate: 0, color: "#18181b" }
+                      : { x: 0, rotate: 0, color: "#18181b" }
                   }
                   transition={{
                     type: "spring",
                     stiffness: bounce.stiffness,
                     damping: bounce.damping,
-                    mass: 0.6,
+                    mass: 0.2,
                     // Color uses its own tween: snap to color quickly, fade back slowly
                     color: {
                       type: "tween",
-                      duration: active ? 0.1 : 1.4,
+                      duration: active ? 0.1 : 2,
+                      delay: active ? 0 : 0.8, // Hold for 0.8s before fading back
                       ease: "easeOut",
                     },
                   }}
