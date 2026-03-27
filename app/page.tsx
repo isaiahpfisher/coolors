@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { Slider } from "@/components/ui/slider"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -16,131 +15,22 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
-
-// --- Types ---
-
-type FontFamily =
-  | "Georgia, serif"
-  | "'Courier New', monospace"
-  | "'Times New Roman', serif"
-  | "Garamond, serif"
-  | "'Trebuchet MS', sans-serif"
-
-type FontWeight = "300" | "400" | "500" | "600" | "700" | "800" | "900"
-
-type LetterSpacing =
-  | "-0.05em"
-  | "-0.02em"
-  | "0em"
-  | "0.05em"
-  | "0.1em"
-  | "0.2em"
-
-type LineHeight = "1" | "1.2" | "1.4" | "1.6" | "2"
-
-interface TextSettings {
-  fontFamily: FontFamily
-  fontSize: number
-  fontWeight: FontWeight
-  letterSpacing: LetterSpacing
-  lineHeight: LineHeight
-  italic: boolean
-  uppercase: boolean
-  content: string
-}
-
-// --- Constants ---
-
-const FONT_FAMILIES: { label: string; value: FontFamily }[] = [
-  { label: "Georgia", value: "Georgia, serif" },
-  { label: "Courier New", value: "'Courier New', monospace" },
-  { label: "Times New Roman", value: "'Times New Roman', serif" },
-  { label: "Garamond", value: "Garamond, serif" },
-  { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
-]
-
-const FONT_WEIGHTS: { label: string; value: FontWeight }[] = [
-  { label: "Light (300)", value: "300" },
-  { label: "Regular (400)", value: "400" },
-  { label: "Medium (500)", value: "500" },
-  { label: "Semi-Bold (600)", value: "600" },
-  { label: "Bold (700)", value: "700" },
-  { label: "Extra-Bold (800)", value: "800" },
-  { label: "Black (900)", value: "900" },
-]
-
-const LETTER_SPACINGS: { label: string; value: LetterSpacing }[] = [
-  { label: "Tighter (−0.05em)", value: "-0.05em" },
-  { label: "Tight (−0.02em)", value: "-0.02em" },
-  { label: "Normal", value: "0em" },
-  { label: "Wide (0.05em)", value: "0.05em" },
-  { label: "Wider (0.1em)", value: "0.1em" },
-  { label: "Widest (0.2em)", value: "0.2em" },
-]
-
-const LINE_HEIGHTS: { label: string; value: LineHeight }[] = [
-  { label: "None (1)", value: "1" },
-  { label: "Tight (1.2)", value: "1.2" },
-  { label: "Snug (1.4)", value: "1.4" },
-  { label: "Normal (1.6)", value: "1.6" },
-  { label: "Loose (2)", value: "2" },
-]
-
-const DEFAULT_CONTENT =
-  "Hover over this text to see the animation. Each letter will come alive with motion and color."
-
-const DEFAULT_SETTINGS: TextSettings = {
-  fontFamily: "Georgia, serif",
-  fontSize: 48,
-  fontWeight: "400",
-  letterSpacing: "0em",
-  lineHeight: "1.4",
-  italic: false,
-  uppercase: false,
-  content: DEFAULT_CONTENT,
-}
-
-// --- Sub-components ---
-
-function ControlRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-        {label}
-      </Label>
-      {children}
-    </div>
-  )
-}
-
-function AnimatedTextPreview({ settings }: { settings: TextSettings }) {
-  // TODO: Replace this with the real per-letter animated component.
-  // For now, render the text as a single block so the layout and styles
-  // are correct and easy to swap out.
-  return (
-    <p
-      className="w-full cursor-default transition-all duration-200 select-none"
-      style={{
-        fontFamily: settings.fontFamily,
-        fontSize: `${settings.fontSize}px`,
-        fontWeight: settings.fontWeight,
-        letterSpacing: settings.letterSpacing,
-        lineHeight: settings.lineHeight,
-        fontStyle: settings.italic ? "italic" : "normal",
-        textTransform: settings.uppercase ? "uppercase" : "none",
-        color: "#18181b", // zinc-900 — the animation will override this per-letter on hover
-      }}
-    >
-      {settings.content}
-    </p>
-  )
-}
+import { ControlRow } from "@/components/control-row"
+import { AnimatedTextPreview } from "@/components/animated-text-preview"
+import {
+  FONT_FAMILIES,
+  FONT_WEIGHTS,
+  LETTER_SPACINGS,
+  LINE_HEIGHTS,
+  DEFAULT_SETTINGS,
+} from "@/lib/text-animation-constants"
+import type {
+  FontFamily,
+  FontWeight,
+  LetterSpacing,
+  LineHeight,
+  TextSettings,
+} from "@/lib/text-animation-types"
 
 // --- Main component ---
 
@@ -176,16 +66,10 @@ export default function TextAnimationPlayground() {
           >
             Preview
           </Badge>
-          <Badge
-            variant="outline"
-            className="border-blue-400 text-[10px] tracking-widest text-blue-600 uppercase"
-          >
-            Animation not yet wired
-          </Badge>
         </div>
 
         {/* The text preview */}
-        <div className="relative z-10 w-full max-w-3xl">
+        <div className="relative z-10 w-full">
           <AnimatedTextPreview settings={settings} />
         </div>
 
