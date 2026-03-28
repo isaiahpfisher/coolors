@@ -28,7 +28,7 @@ export const FONT_FAMILIES: { label: string; value: FontFamily }[] = [
   { label: "Righteous", value: "var(--font-righteous)" },
   { label: "Space Mono", value: "var(--font-space-mono)" },
   { label: "Varela Round", value: "var(--font-varela-round)" },
-  { label: "Times New Roman", value: "Times New Roman" },
+{ label: "Times New Roman", value: "Times New Roman" },
   { label: "Georgia", value: "Georgia" },
   { label: "Courier New", value: "Courier New" },
   { label: "Garamond", value: "Garamond" },
