@@ -49,7 +49,7 @@ export const DEFAULT_CONTENT =
 export const DEFAULT_SETTINGS: TextSettings = {
   fontFamily: "Inter, sans-serif",
   fontSize: 100,
-  fontWeight: "700",
+  fontWeight: "900",
   letterSpacing: "-0.04em",
   lineHeight: "1",
   italic: false,

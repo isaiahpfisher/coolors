@@ -1,42 +1,80 @@
 "use client"
 
-import { useMemo, useState, CSSProperties } from "react"
+import { useMemo, useState, useRef, CSSProperties } from "react"
 import { motion } from "framer-motion"
 
 // ---------------------------------------------------------------------------
-// Seeded deterministic pseudo-random — used for per-letter bounce shape
+// Palette — vibrant, playful colors drawn from the reference image
 // ---------------------------------------------------------------------------
-function seeded(seed: number): number {
-  const x = Math.sin(seed + 1) * 10000
-  return x - Math.floor(x)
+const PALETTE = [
+  "#F87213", // orange
+  "#F59E0C", // amber
+  "#EAB305", // gold
+  "#84CC11", // lime
+  "#0EBA81", // emerald
+  "#12B9A5", // teal
+  "#06B6D5", // cyan
+  "#0FA4E9", // sky blue
+  "#3777E2", // royal blue
+  "#3C80F7", // bright blue
+  "#6366F2", // indigo
+  "#8C5CF9", // violet
+  "#A954FA", // purple
+  "#DA46EF", // fuchsia
+  "#ED4799", // pink
+  "#F43F5E", // rose
+  "#F04243", // coral red
+]
+
+// ---------------------------------------------------------------------------
+// Per-character motion profile
+// Tall/narrow chars pivot at the bottom and rotate a lot but barely slide.
+// Wide/round chars slide a lot and barely rotate.
+// ---------------------------------------------------------------------------
+const NARROW_CHARS = new Set([..."!|iltIfj1:;"])
+const WIDE_CHARS = new Set([..."oOsSmMwWuUncCeE0dbpqg"])
+
+interface Profile {
+  xAmp: number
+  rotAmp: number
+  originY: number
 }
 
-function sr(index: number, offset: number): number {
-  return seeded(index * 37 + offset)
+function getProfile(char: string): Profile {
+  if (NARROW_CHARS.has(char)) return { xAmp: 4, rotAmp: 6, originY: 1 }
+  if (WIDE_CHARS.has(char)) return { xAmp: 12, rotAmp: 3, originY: 0.5 }
+  return { xAmp: 10, rotAmp: 4, originY: 0.5 }
 }
 
 // ---------------------------------------------------------------------------
-// Color — fully random vibrant hue each call, so re-hovering the same
-// letter always surprises you with a different color.
+// Keyframe builder — decaying oscillation (fast → slow, smooth)
 // ---------------------------------------------------------------------------
-function randomColor(): string {
-  const hue = Math.random() * 360
-  const sat = 80 + Math.random() * 15 // 80 – 95 %
-  const lit = 45 + Math.random() * 10 // 45 – 55 %
-  return `hsl(${hue.toFixed(1)}, ${sat.toFixed(1)}%, ${lit.toFixed(1)}%)`
+interface Keyframes {
+  x: number[]
+  rotate: number[]
+  times: number[]
 }
 
-// ---------------------------------------------------------------------------
-// Per-letter bounce parameters — each letter gets a slightly different
-// lift height and spring feel so they never look in lockstep.
-// ---------------------------------------------------------------------------
-function letterBounce(index: number) {
+function buildKeyframes(xAmp: number, rotAmp: number): Keyframes {
+  //          0     1      2      3      4      5      6      7     8
+  const decay = [0, 1, 0.72, 0.52, 0.36, 0.24, 0.15, 0.07, 0]
+  const signs = [0, 1, -1, 1, -1, 1, -1, 1, 0]
+  const times = [0, 0.08, 0.2, 0.35, 0.5, 0.63, 0.76, 0.88, 1.0]
+
   return {
-    x: -(14 + sr(index, 5) * 6), // −14 to −20 px sideways
-    rotate: (sr(index, 7) - 0.5) * 12, // −6° to +6°
-    stiffness: 200 + sr(index, 8) * 100, // spring stiffness (lower for longer oscillation)
-    damping: 8 + sr(index, 9) * 4, // spring damping (lower for more bounces)
+    x: signs.map((s, i) => s * xAmp * decay[i]),
+    rotate: signs.map((s, i) => s * rotAmp * decay[i]),
+    times,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Per-letter state
+// ---------------------------------------------------------------------------
+interface LetterState {
+  shakeVersion: number // increment to replay keyframe animation
+  isShaking: boolean
+  color: string | null // null = black / resting
 }
 
 // ---------------------------------------------------------------------------
@@ -49,101 +87,180 @@ interface AnimatedTextProps {
 }
 
 export function AnimatedText({ text, style, className }: AnimatedTextProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-  // Stores the current color for each letter index — updated on every hoverStart
-  // so re-hovering the same letter always picks a fresh random color.
-  const [colorMap, setColorMap] = useState<Record<number, string>>({})
+  const [states, setStates] = useState<Record<number, LetterState>>({})
 
-  function handleHoverStart(i: number) {
-    setHoveredIndex(i)
-    setColorMap((prev) => ({ ...prev, [i]: randomColor() }))
+  // Mirror state in a ref so callbacks always see fresh values
+  const statesRef = useRef<Record<number, LetterState>>({})
 
-    setTimeout(() => {
-      setHoveredIndex(null)
-    }, 2000)
+  // Color tracking
+  const paletteIndexRef = useRef(Math.floor(Math.random() * PALETTE.length))
+  const activeColorCountRef = useRef(0)
+  const colorTimers = useRef<Record<number, ReturnType<typeof setTimeout>>>({})
+
+  // Tracks the last letter index triggered via pointer move, so we don't
+  // re-fire the same letter while the cursor lingers inside it.
+  const lastTriggeredIdxRef = useRef<number | null>(null)
+
+  function pickNextColor(): string {
+    if (activeColorCountRef.current === 0) {
+      // Re-randomize when all letters are dark so every fresh run feels new
+      paletteIndexRef.current = Math.floor(Math.random() * PALETTE.length)
+    }
+    paletteIndexRef.current = (paletteIndexRef.current + 1) % PALETTE.length
+    return PALETTE[paletteIndexRef.current]
   }
 
-  const words = useMemo(
-    () =>
-      text
-        .split(" ")
-        .flatMap((w) => [w, " "])
-        .slice(0, -1),
-    [text]
-  )
+  function commit(next: Record<number, LetterState>) {
+    statesRef.current = next
+    setStates({ ...next })
+  }
+
+  function handleMouseEnter(idx: number) {
+    const cur: LetterState = statesRef.current[idx] ?? {
+      shakeVersion: 0,
+      isShaking: false,
+      color: null,
+    }
+
+    const wasColored = cur.color !== null
+    const isResting = !cur.isShaking && !wasColored
+    const newColor = pickNextColor()
+
+    // Track active color count
+    if (!wasColored) activeColorCountRef.current++
+
+    const next: LetterState = {
+      shakeVersion: isResting ? cur.shakeVersion + 1 : cur.shakeVersion,
+      isShaking: isResting ? true : cur.isShaking,
+      color: newColor,
+    }
+
+    commit({ ...statesRef.current, [idx]: next })
+
+    // Reset color hold timer — always 3s from now
+    clearTimeout(colorTimers.current[idx])
+    colorTimers.current[idx] = setTimeout(() => {
+      activeColorCountRef.current = Math.max(0, activeColorCountRef.current - 1)
+      const updated = {
+        ...statesRef.current,
+        [idx]: { ...statesRef.current[idx], color: null },
+      }
+      commit(updated)
+    }, 3000)
+
+    // Clear shake flag after 2s — only if we just started the shake
+    if (isResting) {
+      setTimeout(() => {
+        const updated = {
+          ...statesRef.current,
+          [idx]: { ...statesRef.current[idx], isShaking: false },
+        }
+        commit(updated)
+      }, 2000)
+    }
+  }
+
+  // Fired on the container so we never miss a letter, even at high cursor speed.
+  // elementFromPoint finds what's actually under the cursor; closest() walks up
+  // to the nearest letter span; data-letter-idx maps it back to our state.
+  function handleMouseMove(e: React.MouseEvent) {
+    const el = document.elementFromPoint(e.clientX, e.clientY)
+    const letterEl = (el as Element)?.closest(
+      "[data-letter-idx]"
+    ) as HTMLElement | null
+    if (!letterEl) return
+    const idx = parseInt(letterEl.dataset.letterIdx ?? "", 10)
+    if (isNaN(idx)) return
+    if (idx === lastTriggeredIdxRef.current) return // still on same letter
+    lastTriggeredIdxRef.current = idx
+    handleMouseEnter(idx)
+  }
+
+  function handleMouseLeaveContainer() {
+    lastTriggeredIdxRef.current = null
+  }
+
+  // ---------------------------------------------------------------------------
+  // Build word / letter structure with globally-unique indices
+  // ---------------------------------------------------------------------------
+  const segments = useMemo(() => {
+    // Split into words and spaces, preserving spaces as their own segment
+    const words = text.split(" ")
+    const result: Array<{ word: string; startIdx: number }> = []
+    let idx = 0
+    words.forEach((word, wi) => {
+      result.push({ word, startIdx: idx })
+      idx += word.length
+      if (wi < words.length - 1) idx++ // account for space character
+    })
+    return result
+  }, [text])
 
   return (
     <span
       className={className}
       style={{ ...style, display: "inline", cursor: "default" }}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeaveContainer}
     >
-      {words.map((word, wordIndex) => {
-        const letters = word.split("").map((char, i) => ({
-          char,
-          i: wordIndex * 1000 + i,
-          bounce: letterBounce(i),
-        }))
+      {segments.map(({ word, startIdx }, wordIndex) => (
+        <span key={wordIndex} className="whitespace-nowrap">
+          {word.split("").map((char, charPos) => {
+            const idx = startIdx + charPos
+            const state: LetterState = states[idx] ?? {
+              shakeVersion: 0,
+              isShaking: false,
+              color: null,
+            }
+            const profile = getProfile(char)
+            const kf = buildKeyframes(profile.xAmp, profile.rotAmp)
+            const currentColor = state.color ?? "#18181b"
 
-        return (
-          <span key={wordIndex} className="whitespace-nowrap">
-            {letters.map(({ char, i, bounce }) => {
-              const isSpace = char === " "
-              const active = !isSpace && hoveredIndex === i
-              // Fall back to a placeholder color on first render (before any hover).
-              // Framer needs a real color value on both ends to tween correctly.
-              const color = colorMap[i] ?? "#18181b"
-
-              if (isSpace) {
-                return (
-                  <span
-                    key={i}
-                    style={{ display: "inline-block", whiteSpace: "pre" }}
-                  >
-                    {char}
-                  </span>
-                )
-              }
-
-              return (
+            return (
+              // Outer span: owns color animation only.
+              // data-letter-idx lets handleMouseMove identify this element.
+              <motion.span
+                key={idx}
+                data-letter-idx={idx}
+                animate={{ color: currentColor }}
+                transition={{
+                  color: {
+                    type: "tween",
+                    duration: state.color ? 0.1 : 0.3,
+                    ease: "easeOut",
+                  },
+                }}
+                style={{ display: "inline-block" }}
+              >
+                {/* Inner span: owns shake animation, re-keyed to replay cleanly */}
                 <motion.span
-                  key={i}
-                  onMouseEnter={() => handleHoverStart(i)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  animate={
-                    active
-                      ? {
-                          x: bounce.x,
-                          rotate: bounce.rotate,
-                          color,
-                        }
-                      : { x: 0, rotate: 0, color: "#18181b" }
-                  }
+                  key={state.shakeVersion}
+                  animate={{ x: kf.x, rotate: kf.rotate }}
                   transition={{
-                    type: "spring",
-                    stiffness: bounce.stiffness,
-                    damping: bounce.damping,
-                    mass: 0.2,
-                    // Color uses its own tween: snap to color quickly, fade back slowly
-                    color: {
-                      type: "tween",
-                      duration: active ? 0.1 : 2,
-                      delay: active ? 0 : 0.8, // Hold for 0.8s before fading back
-                      ease: "easeOut",
-                    },
+                    duration: 1.5,
+                    times: kf.times,
+                    ease: "easeOut",
                   }}
                   style={{
                     display: "inline-block",
-                    originY: 1,
-                    color: "inherit",
+                    transformOrigin:
+                      profile.originY === 1 ? "bottom center" : "center center",
                   }}
                 >
                   {char}
                 </motion.span>
-              )
-            })}
-          </span>
-        )
-      })}
+              </motion.span>
+            )
+          })}
+
+          {/* Space between words (no animation) */}
+          {wordIndex < segments.length - 1 && (
+            <span style={{ display: "inline-block", whiteSpace: "pre" }}>
+              {" "}
+            </span>
+          )}
+        </span>
+      ))}
     </span>
   )
 }

@@ -31,6 +31,8 @@ import type {
   LineHeight,
   TextSettings,
 } from "@/lib/text-animation-types"
+import Link from "next/link"
+import { ExternalLinkIcon } from "lucide-react"
 
 // --- Main component ---
 
@@ -59,14 +61,19 @@ export default function TextAnimationPlayground() {
         />
 
         {/* Corner label */}
-        <div className="absolute top-6 left-6 flex items-center gap-2">
+        <Link
+          className="absolute top-6 left-6 flex items-center gap-2"
+          target="_blank"
+          href="https://isaiahpfisher.com"
+        >
           <Badge
             variant="outline"
             className="border-zinc-300 text-[10px] tracking-widest text-zinc-400 uppercase"
           >
-            Preview
+            Made By Isaiah Fisher
+            <ExternalLinkIcon />
           </Badge>
-        </div>
+        </Link>
 
         {/* The text preview */}
         <div className="relative z-10 w-full">
