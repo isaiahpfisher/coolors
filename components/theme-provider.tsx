@@ -39,6 +39,7 @@ function ThemeHotkey() {
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      setTheme("light")
       return
 
       if (event.defaultPrevented || event.repeat) {
