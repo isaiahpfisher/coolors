@@ -107,7 +107,12 @@ export default function TextAnimationPlayground() {
               onValueChange={(v) => update("fontFamily", v as FontFamily)}
             >
               <SelectTrigger className="h-8 border-zinc-200 bg-white text-sm text-zinc-800">
-                <SelectValue />
+                <span>
+                  {
+                    FONT_FAMILIES.find((f) => f.value === settings.fontFamily)
+                      ?.label
+                  }
+                </span>
               </SelectTrigger>
               <SelectContent className="border-zinc-200 bg-white text-zinc-800">
                 <SelectGroup>

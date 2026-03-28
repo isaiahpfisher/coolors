@@ -7,12 +7,32 @@ import type {
 } from "./text-animation-types"
 
 export const FONT_FAMILIES: { label: string; value: FontFamily }[] = [
-  { label: "Inter", value: "Inter, sans-serif" },
-  { label: "Georgia", value: "Georgia, serif" },
-  { label: "Courier New", value: "'Courier New', monospace" },
-  { label: "Times New Roman", value: "'Times New Roman', serif" },
-  { label: "Garamond", value: "Garamond, serif" },
-  { label: "Trebuchet MS", value: "'Trebuchet MS', sans-serif" },
+  { label: "Inter (Google)", value: "var(--font-inter)" },
+  { label: "Abril Fatface", value: "var(--font-abril-fatface)" },
+  { label: "Architects Daughter", value: "var(--font-architects-daughter)" },
+  { label: "Bebas Neue", value: "var(--font-bebas-neue)" },
+  { label: "Boogaloo", value: "var(--font-boogaloo)" },
+  { label: "Comfortaa", value: "var(--font-comfortaa)" },
+  { label: "DM Sans", value: "var(--font-dm-sans)" },
+  { label: "DM Serif Display", value: "var(--font-dm-serif-display)" },
+  { label: "Fredoka One", value: "var(--font-fredoka-one)" },
+  { label: "Lora", value: "var(--font-lora)" },
+  { label: "Montserrat", value: "var(--font-montserrat)" },
+  { label: "Nunito", value: "var(--font-nunito)" },
+  { label: "Outfit", value: "var(--font-outfit)" },
+  { label: "Pacifico", value: "var(--font-pacifico)" },
+  { label: "Playfair Display", value: "var(--font-playfair-display)" },
+  { label: "Plus Jakarta Sans", value: "var(--font-plus-jakarta-sans)" },
+  { label: "Poppins", value: "var(--font-poppins)" },
+  { label: "Quicksand", value: "var(--font-quicksand)" },
+  { label: "Righteous", value: "var(--font-righteous)" },
+  { label: "Space Mono", value: "var(--font-space-mono)" },
+  { label: "Varela Round", value: "var(--font-varela-round)" },
+  { label: "Times New Roman", value: "Times New Roman" },
+  { label: "Georgia", value: "Georgia" },
+  { label: "Courier New", value: "Courier New" },
+  { label: "Garamond", value: "Garamond" },
+  { label: "Trebuchet MS", value: "Trebuchet MS" },
 ]
 
 export const FONT_WEIGHTS: { label: string; value: FontWeight }[] = [
@@ -47,7 +67,7 @@ export const DEFAULT_CONTENT =
   "For I decided to know nothing among you except Jesus Christ and him crucified."
 
 export const DEFAULT_SETTINGS: TextSettings = {
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "var(--font-inter)",
   fontSize: 100,
   fontWeight: "900",
   letterSpacing: "-0.04em",

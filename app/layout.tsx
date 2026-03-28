@@ -1,4 +1,5 @@
 import { Geist_Mono, Inter } from "next/font/google"
+import { ALL_FONT_VARIABLES } from "@/lib/fonts"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -27,7 +28,7 @@ export default function RootLayout({
         inter.variable
       )}
     >
-      <body>
+      <body className={`${ALL_FONT_VARIABLES}`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
