@@ -11,7 +11,7 @@ export type FontFamily =
   | "var(--font-comfortaa)"
   | "var(--font-dm-sans)"
   | "var(--font-dm-serif-display)"
-  | "var(--font-fredoka-one)"
+  | "var(--font-fredoka)"
   | "var(--font-inter)"
   | "var(--font-lora)"
   | "var(--font-montserrat)"

@@ -15,7 +15,7 @@ export const FONT_FAMILIES: { label: string; value: FontFamily }[] = [
   { label: "Comfortaa", value: "var(--font-comfortaa)" },
   { label: "DM Sans", value: "var(--font-dm-sans)" },
   { label: "DM Serif Display", value: "var(--font-dm-serif-display)" },
-  { label: "Fredoka One", value: "var(--font-fredoka-one)" },
+  { label: "Fredoka", value: "var(--font-fredoka)" },
   { label: "Lora", value: "var(--font-lora)" },
   { label: "Montserrat", value: "var(--font-montserrat)" },
   { label: "Nunito", value: "var(--font-nunito)" },
